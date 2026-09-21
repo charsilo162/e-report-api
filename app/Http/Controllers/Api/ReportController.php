@@ -11,22 +11,24 @@ use App\Http\Resources\ReportResource;
 use App\Models\Report;
 use App\Services\ReportService;
 use Illuminate\Http\Request;
-
+use App\Http\Resources\AdminReportResource;
 class ReportController extends Controller
 {
     public function __construct(protected ReportService $reports)
     {
     }
+//     public function adminShow(Report $report)
+// {
+//     return new AdminReportResource($report->load(['suspects', 'evidenceFiles', 'categories', 'user']));
+// }
+public function store(StoreReportRequest $request)
+{
+    $data = $request->validated();
+    $data['user_id'] = auth('sanctum')->id(); // was: $request->user()?->id
+    $data['files'] = $request->file('files', []);
 
-    public function store(StoreReportRequest $request)
-    {
-        $data = $request->validated();
-        $data['user_id'] = $request->user()?->id;
-        $data['files'] = $request->file('files', []);
-
-        return new ReportResource($this->reports->create($data));
-    }
-
+    return new ReportResource($this->reports->create($data));
+}
     public function track(string $passcode)
     {
         return new ReportResource($this->reports->findByPasscode($passcode));
@@ -42,10 +44,19 @@ class ReportController extends Controller
         return AdminReportListResource::collection($paginated);
     }
 
-    public function updateStatus(UpdateReportStatusRequest $request, Report $report)
-    {
-        return new ReportResource($this->reports->updateStatus($report, $request->validated()['status']));
-    }
+public function updateStatus(UpdateReportStatusRequest $request, Report $report)
+{
+    return new ReportResource(
+        $this->reports->updateStatus($report, $request->validated()['status'], $request->user()->id)
+    );
+}
+
+public function adminShow(Report $report)
+{
+    return new AdminReportResource($report->load(['suspects', 'evidenceFiles', 'categories', 'user']));
+}
+
+
 
     public function destroy(Report $report)
     {

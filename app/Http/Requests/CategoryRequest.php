@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Requests;
+//app/Http/Requests/CategoryRequest.php
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -8,14 +9,14 @@ class CategoryRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // gated by the 'admin' route middleware, not per-field auth
+        return true;
     }
 
     public function rules(): array
     {
         return [
             'label' => ['required', 'string', 'max:255'],
-            'image' => ['required', 'string', 'max:2048'],
+            'image' => [$this->isMethod('POST') ? 'required' : 'nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ];
     }
 }

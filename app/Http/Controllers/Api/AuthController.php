@@ -1,12 +1,12 @@
 <?php
+
 namespace App\Http\Controllers\Api;
+//app/Http/Controllers/Api/AuthController.php — REPLACES the file
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
@@ -25,33 +25,38 @@ class AuthController extends Controller
             'password' => Hash::make($data['password']),
         ]);
 
-        Auth::login($user);
-        $request->session()->regenerate();
-
-        return response()->json($user);
+        return response()->json([
+            'user' => $user,
+            'token' => $user->createToken('e-report')->plainTextToken,
+        ]);
     }
 
     public function login(Request $request)
     {
+
+    
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        $user = User::where('email', $credentials['email'])->first();
+
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             return response()->json(['message' => 'Invalid email or password.'], 422);
         }
 
-        $request->session()->regenerate();
+        $user->update(['last_login_at' => now()]);
 
-        return response()->json(Auth::user());
+        return response()->json([
+            'user' => $user,
+            'token' => $user->createToken('e-report')->plainTextToken,
+        ]);
     }
 
     public function logout(Request $request)
     {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Logged out.']);
     }

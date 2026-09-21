@@ -1,0 +1,19 @@
+<?php
+
+namespace App\Http\Requests;
+//app/Http/Requests/ResetUserPasswordRequest.php — run: php artisan make:request ResetUserPasswordRequest
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class ResetUserPasswordRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return ['password' => ['required', 'string', 'min:8', 'confirmed']];
+    }
+}

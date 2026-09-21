@@ -10,10 +10,17 @@ use App\Models\User;
 use App\Models\WalletTransaction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
-
+use App\Services\PlatformWalletService;
+use Illuminate\Validation\ValidationException;
 class ReportService extends BaseCrudService
 {
-    protected string $modelClass = Report::class;
+
+ protected string $modelClass = Report::class;
+
+    public function __construct(protected PlatformWalletService $platformWallet)
+    {
+    }
+    // protected string $modelClass = Report::class;
 
     public function create(array $data): Report
     {
@@ -46,6 +53,12 @@ class ReportService extends BaseCrudService
                     'mime' => $file->getMimeType(),
                 ]);
             }
+            
+            $report->load('categories');
+                \App\Models\ActivityLog::log(
+                    'New Report Submitted',
+                    'Category: '.($report->categories->first()->label ?? 'Uncategorized').' ('.($data['is_anonymous'] ? 'Anonymous user' : 'Registered user').')'
+                );
 
             return $report->fresh(['suspects', 'evidenceFiles', 'categories']);
         });
@@ -111,9 +124,16 @@ public function forAdmin(array $filters = [], int $perPage = 10)
 }
 
 
-public function updateStatus(Report $report, string $status): Report
+public function updateStatus(Report $report, string $status, ?int $actorId = null): Report
 {
+    $oldStatus = $report->status;
     $report->update(['status' => $status]);
+
+    \App\Models\ActivityLog::log(
+        "Report #{$report->id} Updated",
+        "Status changed from {$oldStatus} to {$status}",
+        $actorId
+    );
 
     return $report->fresh();
 }
@@ -123,19 +143,25 @@ public function delete(Model $model): void
     Storage::disk('local')->deleteDirectory("evidence/{$model->id}");
     $model->delete();
 }
-public function creditWallet(Report $report, string $walletId, float $amount): WalletTransaction
-{
-    $user = User::where('wallet_id', $walletId)->firstOrFail();
+    public function creditWallet(Report $report, string $walletId, float $amount): WalletTransaction
+    {
+        $user = User::where('wallet_id', $walletId)->firstOrFail();
 
-    $report->update(['wallet_id' => $walletId]);
+        if ($amount > $this->platformWallet->balance()) {
+            throw ValidationException::withMessages([
+                'amount' => 'Insufficient platform wallet balance to complete this payout.',
+            ]);
+        }
 
-    return WalletTransaction::create([
-        'user_id' => $user->id,
-        'report_id' => $report->id,
-        'type' => 'Credit',
-        'amount' => $amount,
-        'status' => 'Completed',
-    ]);
-}
+        $report->update(['wallet_id' => $walletId]);
+
+        return WalletTransaction::create([
+            'user_id' => $user->id,
+            'report_id' => $report->id,
+            'type' => 'Credit',
+            'amount' => $amount,
+            'status' => 'Completed',
+        ]);
+    }
 
 }

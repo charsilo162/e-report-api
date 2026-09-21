@@ -19,10 +19,7 @@ class CategoryController extends Controller
         return CategoryResource::collection($this->categories->all());
     }
 
-    public function adminShow(Report $report)
-{
-    return new AdminReportResource($report->load(['suspects', 'evidenceFiles', 'categories', 'user']));
-}
+
 
     public function store(CategoryRequest $request)
     {

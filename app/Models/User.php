@@ -13,13 +13,16 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    protected $fillable = [
-        'name', 'nickname', 'email', 'phone', 'password', 'role',
-        'anonymous_by_default', 'two_factor_enabled',
-        'notification_channel', 'notify_on_status_change',
-        'wallet_id', 'suspended_at',
-    ];
-
+        protected $fillable = [
+            'name', 'nickname', 'email', 'phone', 'password', 'role',
+            'anonymous_by_default', 'two_factor_enabled',
+            'notification_channel', 'notify_on_status_change',
+            'wallet_id', 'suspended_at', 'last_login_at', 'company_name',
+        ];
+protected $casts = [
+    'last_login_at' => 'datetime',
+    'suspended_at' => 'datetime',
+];
     protected $hidden = ['password', 'remember_token'];
 
     protected function casts(): array

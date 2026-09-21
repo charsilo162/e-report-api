@@ -13,16 +13,17 @@ class Report extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'user_id', 'org_name', 'location', 'incident_date', 'wrongdoing',
-        'description', 'report_to', 'is_anonymous', 'status', 'passcode', 'wallet_id',
-    ];
+protected $fillable = [
+    'user_id', 'org_name', 'location', 'incident_date', 'wrongdoing',
+    'description', 'report_to', 'is_anonymous', 'status', 'is_urgent', 'passcode', 'wallet_id',
+];
 
-    protected $casts = [
-        'wrongdoing' => 'array',
-        'is_anonymous' => 'boolean',
-        'incident_date' => 'date',
-    ];
+protected $casts = [
+    'wrongdoing' => 'array',
+    'is_anonymous' => 'boolean',
+    'is_urgent' => 'boolean',
+    'incident_date' => 'date',
+];
 
     public function user(): BelongsTo
     {
@@ -38,7 +39,7 @@ class Report extends Model
     {
         return $this->hasMany(EvidenceFile::class);
     }
-
+ 
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class);
